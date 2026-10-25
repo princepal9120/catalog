@@ -26,6 +26,9 @@
     // has to exist before the pack bundles the Worker.
     "buildCommand": "npm --prefix dashboard run build",
     "wranglerConfig": "wrangler.toml",
+    // /health is a public route on the Worker (src/index.ts) and answers
+    // without the bearer key, so it is a real probe rather than a fallback.
+    "health": { "path": "/health" },
     // Upstream pins this repository's own D1/KV/R2 ids and production URLs in
     // wrangler.toml. An upstream change to ship placeholders is pending; until
     // it merges, the patch provisions each install its own resources and
@@ -37,7 +40,12 @@
       "vars": { "BASE_URL": "{{appUrl}}", "DASHBOARD_URL": "{{appUrl}}" }
     }
   },
-  "requires": ["config-patch-values"],
+  "requires": ["r2", "workers-ai", "config-patch-values"],
+  // migrations/init.sql is three CREATE TABLE IF NOT EXISTS statements, which
+  // is a schema file rather than a wrangler migration (it is not in the
+  // migrations/<timestamp>_<name>/migration.sql layout). It runs on every
+  // install and update and adds nothing that already exists.
+  "resources": { "d1": { "DB": { "schema": ["migrations/init.sql"] } } },
   // D1, KV, R2, the publish queue and Workers AI all fit the free plan.
   "plan": "free",
   "openPath": "/app",
